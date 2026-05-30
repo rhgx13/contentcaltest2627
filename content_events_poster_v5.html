@@ -1,0 +1,272 @@
+
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  .poster{background:#0e0e12;border-radius:16px;padding:24px;font-family:var(--font-sans);}
+  .poster-title{color:#fff;font-size:17px;font-weight:500;letter-spacing:.02em;margin-bottom:2px;}
+  .poster-sub{color:#555;font-size:10px;letter-spacing:.06em;text-transform:uppercase;margin-bottom:16px;}
+  .controls{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;align-items:center;}
+  .seg{display:flex;background:#17171d;border-radius:8px;padding:3px;gap:2px;}
+  .seg-btn{border:none;background:transparent;color:#666;font-size:11px;font-weight:500;padding:5px 12px;border-radius:6px;cursor:pointer;transition:all .15s;font-family:var(--font-sans);}
+  .seg-btn.active{background:#2a2a3a;color:#fff;}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:16px;}
+  .leg{display:flex;align-items:center;gap:5px;font-size:10px;color:#888;}
+  .leg-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+  .grid{display:grid;gap:8px;}
+  .grid-months{grid-template-columns:repeat(4,minmax(0,1fr));}
+  .grid-markets{grid-template-columns:repeat(3,minmax(0,1fr));}
+  .card{border-radius:10px;padding:10px;background:#17171d;}
+  .card-label{font-size:10px;font-weight:500;color:#fff;letter-spacing:.05em;text-transform:uppercase;margin-bottom:8px;padding-bottom:6px;border-bottom:.5px solid #242430;}
+  .pills{display:flex;flex-wrap:wrap;gap:4px;}
+  .pill{display:inline-block;border-radius:20px;padding:3px 9px;font-size:10px;font-weight:500;line-height:1.4;}
+  .key    {background:#3C3489;color:#CECBF6;}
+  .big    {background:#0F6E56;color:#9FE1CB;}
+  .notable{background:#633806;color:#FAC775;}
+  .base   {background:#1e1e28;color:#555;}
+  .market-tag{font-size:9px;opacity:.55;margin-left:2px;}
+  .empty{font-size:10px;color:#333;padding:4px 0;}
+</style>
+
+<div class="poster">
+  <div class="poster-title">AU & NZ — content events calendar</div>
+  <div class="poster-sub">2026 / 27 season · Football · Tennis · Motorsport</div>
+
+  <div class="controls">
+    <div class="seg" id="viewSeg">
+      <button class="seg-btn active" onclick="setView('months')">By month</button>
+      <button class="seg-btn" onclick="setView('markets')">By market</button>
+    </div>
+    <div class="seg" id="marketSeg">
+      <button class="seg-btn active" onclick="setMarket('all')">All</button>
+      <button class="seg-btn" onclick="setMarket('AU & NZ')">AU & NZ</button>
+      <button class="seg-btn" onclick="setMarket('AU')">AU only</button>
+      <button class="seg-btn" onclick="setMarket('NZ')">NZ only</button>
+    </div>
+  </div>
+
+  <div class="legend">
+    <span class="leg"><span class="leg-dot" style="background:#7F77DD"></span>Key event</span>
+    <span class="leg"><span class="leg-dot" style="background:#1D9E75"></span>Big event</span>
+    <span class="leg"><span class="leg-dot" style="background:#EF9F27"></span>Notable</span>
+    <span class="leg"><span class="leg-dot" style="background:#333"></span>Scheduled</span>
+  </div>
+
+  <div class="grid grid-months" id="mainGrid"></div>
+</div>
+
+<script>
+function emoji(league){
+  const l = league.toLowerCase();
+  if(l.includes('tennis') || l.includes('atp') || l.includes('wta') || l.includes('davis')) return '🎾';
+  if(l.includes('motorsport') || l.includes('le mans') || l.includes('wec')) return '🏎️';
+  if(l.includes('nations league')) return '🏆🌍';
+  if(l.includes('euro 2028') || l.includes('euro quali')) return '🏆🌍';
+  if(l.includes('supercopa')) return '🏆🇪🇸';
+  if(l.includes('carabao')) return '🏆🏴󠁧󠁢󠁥󠁮󠁧󠁿';
+  if(l.includes('fa cup')) return '🏆🏴󠁧󠁢󠁥󠁮󠁧󠁿';
+  if(l.includes('efl playoff')) return '🏆🏴󠁧󠁢󠁥󠁮󠁧󠁿';
+  if(l.includes('intercontinental')) return '🏆🌍';
+  if(l.includes('copa libertadores')) return '🏆🌎';
+  if(l.includes('copa sudamericana')) return '🏆🌎';
+  if(l.includes('dfl supercup') || l.includes('beckenbauer')) return '🏆🇩🇪';
+  if(l.includes('spfl') || l.includes('scottish')) return '⚽🏴󠁧󠁢󠁳󠁣󠁴󠁿';
+  if(l.includes('efl')) return '⚽🏴󠁧󠁢󠁥󠁮󠁧󠁿';
+  if(l.includes('laliga') || l.includes('la liga') || l.includes('supercopa')) return '⚽🇪🇸';
+  if(l.includes('bundesliga')) return '⚽🇩🇪';
+  if(l.includes('serie a')) return '⚽🇮🇹';
+  if(l.includes('ligue')) return '⚽🇫🇷';
+  return '⚽';
+}
+
+const raw = [
+  {month:'August',year:2026,market:'AU & NZ',tier:'Key Event',league:'SPFL',label:'SPFL season start'},
+  {month:'August',year:2026,market:'AU & NZ',tier:'Key Event',league:'EFL Championship',label:'EFL Champ season start'},
+  {month:'August',year:2026,market:'AU & NZ',tier:'Key Event',league:'LaLiga',label:'LaLiga season start'},
+  {month:'August',year:2026,market:'AU & NZ',tier:'Key Event',league:'Bundesliga',label:'Bundesliga season start'},
+  {month:'August',year:2026,market:'AU & NZ',tier:'Key Event',league:'Serie A',label:'Serie A season start'},
+  {month:'August',year:2026,market:'AU & NZ',tier:'Key Event',league:'Carabao Cup',label:'Carabao Cup R1 & R2'},
+  {month:'August',year:2026,market:'AU & NZ',tier:'Notable',league:'DFL Supercup',label:'DFL Supercup — Bayern v Dortmund'},
+  {month:'August',year:2026,market:'AU & NZ',tier:'',league:'Copa Libertadores',label:'Copa Lib R16'},
+  {month:'August',year:2026,market:'AU & NZ',tier:'',league:'Copa Sudamericana',label:'Copa Suda R16'},
+  {month:'August',year:2026,market:'AU',tier:'Big Event',league:'ATP 1000',label:'ATP 1000 Montreal & Cincinnati'},
+  {month:'August',year:2026,market:'AU',tier:'Big Event',league:'WTA 1000',label:'WTA 1000 Toronto & Cincinnati'},
+
+  {month:'September',year:2026,market:'AU & NZ',tier:'Key Event',league:'Nations League',label:'UEFA Nations League MD1 & 2'},
+  {month:'September',year:2026,market:'AU & NZ',tier:'Key Event',league:'Carabao Cup',label:'Carabao Cup R3'},
+  {month:'September',year:2026,market:'AU & NZ',tier:'Key Event',league:'Serie A',label:'Serie A: Napoli v Roma'},
+  {month:'September',year:2026,market:'AU & NZ',tier:'Key Event',league:'Serie A',label:'Serie A: Juventus v Milan'},
+  {month:'September',year:2026,market:'AU & NZ',tier:'Key Event',league:'SPFL',label:'SPFL: Celtic v Rangers'},
+  {month:'September',year:2026,market:'AU & NZ',tier:'Notable',league:'EFL Championship',label:'EFL: Blackburn v Burnley'},
+  {month:'September',year:2026,market:'AU & NZ',tier:'Notable',league:'EFL Championship',label:'EFL: Wrexham v Swansea'},
+  {month:'September',year:2026,market:'AU & NZ',tier:'Notable',league:'SPFL',label:'SPFL: Hearts v Hibernian'},
+  {month:'September',year:2026,market:'AU & NZ',tier:'Notable',league:'Copa Libertadores',label:'Copa Lib QF'},
+  {month:'September',year:2026,market:'AU & NZ',tier:'Notable',league:'Copa Sudamericana',label:'Copa Suda QF'},
+  {month:'September',year:2026,market:'AU',tier:'Notable',league:'Davis Cup',label:'Davis Cup R2'},
+  {month:'September',year:2026,market:'AU',tier:'Notable',league:'Tennis',label:'Aus Tennis Pro Tour'},
+  {month:'September',year:2026,market:'AU',tier:'Big Event',league:'WTA 1000',label:'WTA 1000 China Open'},
+  {month:'September',year:2026,market:'AU',tier:'Notable',league:'WTA 500',label:'WTA 500 Guadalajara / Singapore / Korea'},
+  {month:'September',year:2026,market:'AU',tier:'Notable',league:'ATP 500',label:'ATP 500 Japan & China'},
+  {month:'September',year:2026,market:'NZ',tier:'',league:'FA Cup',label:'FA Cup early rounds'},
+
+  {month:'October',year:2026,market:'AU & NZ',tier:'Key Event',league:'Nations League',label:'UEFA Nations League MD3 & 4'},
+  {month:'October',year:2026,market:'AU & NZ',tier:'Key Event',league:'Carabao Cup',label:'Carabao Cup R4'},
+  {month:'October',year:2026,market:'AU & NZ',tier:'Key Event',league:'Bundesliga',label:'Bundesliga: Der Klassiker'},
+  {month:'October',year:2026,market:'AU & NZ',tier:'Key Event',league:'LaLiga',label:'LaLiga: Madrid Derby'},
+  {month:'October',year:2026,market:'AU & NZ',tier:'Key Event',league:'EFL Championship',label:'EFL: West Ham v Millwall'},
+  {month:'October',year:2026,market:'AU & NZ',tier:'Notable',league:'LaLiga',label:'LaLiga: Seville Derby'},
+  {month:'October',year:2026,market:'AU & NZ',tier:'Notable',league:'Serie A',label:'Serie A: Lazio v Roma'},
+  {month:'October',year:2026,market:'AU & NZ',tier:'Notable',league:'EFL Championship',label:'EFL: Cardiff v Swansea'},
+  {month:'October',year:2026,market:'AU & NZ',tier:'Notable',league:'Copa Libertadores',label:'Copa Lib SF'},
+  {month:'October',year:2026,market:'AU & NZ',tier:'Notable',league:'Copa Sudamericana',label:'Copa Suda SF'},
+  {month:'October',year:2026,market:'AU',tier:'Key Event',league:'ATP 1000',label:'ATP 1000 Shanghai'},
+  {month:'October',year:2026,market:'AU',tier:'Big Event',league:'WTA 1000',label:'WTA 1000 Wuhan Open'},
+  {month:'October',year:2026,market:'AU',tier:'Notable',league:'Tennis',label:'Aus Tennis Pro Tour'},
+
+  {month:'November',year:2026,market:'AU & NZ',tier:'Key Event',league:'Nations League',label:'UEFA Nations League MD5 & 6'},
+  {month:'November',year:2026,market:'AU & NZ',tier:'Key Event',league:'Carabao Cup',label:'Carabao Cup R5'},
+  {month:'November',year:2026,market:'AU & NZ',tier:'Key Event',league:'Serie A',label:'Serie A: Milan Derby'},
+  {month:'November',year:2026,market:'AU & NZ',tier:'Big Event',league:'EFL Championship',label:'EFL: Portsmouth v Southampton'},
+  {month:'November',year:2026,market:'AU & NZ',tier:'Big Event',league:'EFL Championship',label:'EFL: West Brom v Wolves'},
+  {month:'November',year:2026,market:'AU & NZ',tier:'Notable',league:'Bundesliga',label:'Bundesliga: Dortmund v Schalke'},
+  {month:'November',year:2026,market:'AU & NZ',tier:'Notable',league:'Copa Libertadores',label:'Copa Lib Final'},
+  {month:'November',year:2026,market:'AU & NZ',tier:'Notable',league:'Copa Sudamericana',label:'Copa Suda Final'},
+  {month:'November',year:2026,market:'AU',tier:'Key Event',league:'ATP 1000',label:'ATP 1000 Paris Masters'},
+  {month:'November',year:2026,market:'AU',tier:'Key Event',league:'ATP Finals',label:'ATP Finals — Turin'},
+  {month:'November',year:2026,market:'AU',tier:'Key Event',league:'WTA Finals',label:'WTA Finals — Riyadh'},
+  {month:'November',year:2026,market:'AU',tier:'Notable',league:'Tennis',label:'Aus Tennis Pro Tour'},
+  {month:'November',year:2026,market:'NZ',tier:'',league:'FA Cup',label:'FA Cup R1'},
+
+  {month:'December',year:2026,market:'AU & NZ',tier:'Key Event',league:'LaLiga',label:'LaLiga: El Clásico'},
+  {month:'December',year:2026,market:'AU & NZ',tier:'Key Event',league:'Serie A',label:'Serie A: Inter v Juventus'},
+  {month:'December',year:2026,market:'AU & NZ',tier:'Key Event',league:'Carabao Cup',label:'Carabao Cup QF'},
+  {month:'December',year:2026,market:'AU & NZ',tier:'Notable',league:'Intercontinental Cup',label:'FIFA Intercontinental Cup'},
+  {month:'December',year:2026,market:'AU & NZ',tier:'Notable',league:'LaLiga',label:'LaLiga: Catalan Derby'},
+  {month:'December',year:2026,market:'AU & NZ',tier:'Notable',league:'LaLiga',label:'LaLiga: Valencia Derby'},
+  {month:'December',year:2026,market:'AU & NZ',tier:'Notable',league:'Bundesliga',label:'Bundesliga: Borussen Derby'},
+  {month:'December',year:2026,market:'AU & NZ',tier:'Notable',league:'Bundesliga',label:'Bundesliga: Rhine Derby'},
+  {month:'December',year:2026,market:'AU & NZ',tier:'Notable',league:'SPFL',label:'SPFL: Edinburgh Derby'},
+  {month:'December',year:2026,market:'AU & NZ',tier:'Notable',league:'EFL Championship',label:'EFL L1: Cardiff v Wrexham'},
+  {month:'December',year:2026,market:'AU & NZ',tier:'Notable',league:'EFL Championship',label:'EFL L1: Wrexham v Birmingham'},
+  {month:'December',year:2026,market:'NZ',tier:'Notable',league:'FA Cup',label:'FA Cup R2'},
+
+  {month:'January',year:2027,market:'AU & NZ',tier:'Key Event',league:'Carabao Cup',label:'Carabao Cup SF leg 1'},
+  {month:'January',year:2027,market:'AU & NZ',tier:'Key Event',league:'SPFL',label:'SPFL: Celtic v Rangers'},
+  {month:'January',year:2027,market:'AU & NZ',tier:'Key Event',league:'Supercopa de España',label:'Supercopa de España'},
+  {month:'January',year:2027,market:'AU & NZ',tier:'Notable',league:'EFL Championship',label:'EFL: Boro v Southampton'},
+  {month:'January',year:2027,market:'AU & NZ',tier:'',league:'Bundesliga',label:'Bundesliga: Nord Derby'},
+  {month:'January',year:2027,market:'AU & NZ',tier:'',league:'Bundesliga',label:'Bundesliga winter return'},
+  {month:'January',year:2027,market:'AU & NZ',tier:'',league:'LaLiga',label:'LaLiga winter return'},
+  {month:'January',year:2027,market:'AU & NZ',tier:'',league:'Serie A',label:'Serie A winter return'},
+  {month:'January',year:2027,market:'NZ',tier:'Key Event',league:'FA Cup',label:'FA Cup R3'},
+
+  {month:'February',year:2027,market:'AU & NZ',tier:'Key Event',league:'Carabao Cup',label:'Carabao Cup SF leg 2'},
+  {month:'February',year:2027,market:'AU & NZ',tier:'Key Event',league:'Serie A',label:'Serie A: Inter v Juventus'},
+  {month:'February',year:2027,market:'AU & NZ',tier:'Big Event',league:'Bundesliga',label:'Bundesliga: Der Klassiker'},
+  {month:'February',year:2027,market:'AU',tier:'Notable',league:'Davis Cup',label:'Davis Cup QR'},
+  {month:'February',year:2027,market:'AU',tier:'Notable',league:'WTA 1000',label:'WTA 1000 Qatar & Dubai'},
+  {month:'February',year:2027,market:'AU',tier:'Notable',league:'Tennis',label:'Aus Tennis Pro Tour'},
+  {month:'February',year:2027,market:'NZ',tier:'Key Event',league:'FA Cup',label:'FA Cup R4'},
+
+  {month:'March',year:2027,market:'AU & NZ',tier:'Key Event',league:'Nations League',label:'UEFA Nations League QF & play-offs'},
+  {month:'March',year:2027,market:'AU & NZ',tier:'Key Event',league:'Euro 2028 Qualifiers',label:'UEFA Euro 2028 Quals MD1 & 2'},
+  {month:'March',year:2027,market:'AU & NZ',tier:'Key Event',league:'Carabao Cup',label:'Carabao Cup Final — Wembley'},
+  {month:'March',year:2027,market:'AU & NZ',tier:'Key Event',league:'SPFL',label:'SPFL: Celtic v Rangers'},
+  {month:'March',year:2027,market:'AU & NZ',tier:'Key Event',league:'Serie A',label:'Serie A: Milan Derby'},
+  {month:'March',year:2027,market:'AU & NZ',tier:'Key Event',league:'LaLiga',label:'LaLiga: Madrid Derby'},
+  {month:'March',year:2027,market:'AU & NZ',tier:'Big Event',league:'Bundesliga',label:'Bundesliga: Der Klassiker'},
+  {month:'March',year:2027,market:'AU & NZ',tier:'Notable',league:'Bundesliga',label:'Bundesliga: Rhine Derby'},
+  {month:'March',year:2027,market:'AU',tier:'Key Event',league:'ATP & WTA 1000',label:'ATP & WTA 1000 Indian Wells'},
+  {month:'March',year:2027,market:'AU',tier:'Key Event',league:'ATP & WTA 1000',label:'Miami Open'},
+  {month:'March',year:2027,market:'AU',tier:'Notable',league:'Tennis',label:'Aus Tennis Pro Tour'},
+  {month:'March',year:2027,market:'NZ',tier:'Key Event',league:'FA Cup',label:'FA Cup R5'},
+
+  {month:'April',year:2027,market:'AU & NZ',tier:'Notable',league:'EFL Championship',label:'EFL: South Coast Derby'},
+  {month:'April',year:2027,market:'AU & NZ',tier:'Notable',league:'EFL Championship',label:'EFL L1: Wrexham v Birmingham'},
+  {month:'April',year:2027,market:'AU & NZ',tier:'',league:'Bundesliga',label:'Bundesliga: Borussen Derby'},
+  {month:'April',year:2027,market:'AU & NZ',tier:'',league:'Copa Libertadores',label:'Copa Lib group stage'},
+  {month:'April',year:2027,market:'AU & NZ',tier:'',league:'Copa Sudamericana',label:'Copa Suda group stage'},
+  {month:'April',year:2027,market:'AU',tier:'Key Event',league:'ATP 1000',label:'ATP 1000 Monte-Carlo'},
+  {month:'April',year:2027,market:'AU',tier:'Key Event',league:'ATP & WTA 1000',label:'ATP & WTA 1000 Madrid Open'},
+  {month:'April',year:2027,market:'NZ',tier:'Key Event',league:'FA Cup',label:'FA Cup QF'},
+  {month:'April',year:2027,market:'NZ',tier:'Key Event',league:'FA Cup',label:'FA Cup SF'},
+
+  {month:'May',year:2027,market:'AU & NZ',tier:'Key Event',league:'LaLiga',label:'LaLiga: El Clásico'},
+  {month:'May',year:2027,market:'AU & NZ',tier:'Key Event',league:'SPFL',label:'SPFL: Celtic v Rangers'},
+  {month:'May',year:2027,market:'AU & NZ',tier:'Key Event',league:'EFL Playoffs',label:'EFL Playoffs — Wembley'},
+  {month:'May',year:2027,market:'AU & NZ',tier:'Big Event',league:'Serie A',label:'Serie A: Lazio v Roma'},
+  {month:'May',year:2027,market:'AU & NZ',tier:'Notable',league:'LaLiga',label:'LaLiga last matchday'},
+  {month:'May',year:2027,market:'AU & NZ',tier:'Notable',league:'Serie A',label:'Serie A last matchday'},
+  {month:'May',year:2027,market:'AU & NZ',tier:'Notable',league:'SPFL',label:'SPFL last matchday'},
+  {month:'May',year:2027,market:'AU & NZ',tier:'Notable',league:'EFL Championship',label:'EFL last matchday'},
+  {month:'May',year:2027,market:'AU & NZ',tier:'Notable',league:'Bundesliga',label:'Bundesliga last matchday'},
+  {month:'May',year:2027,market:'AU & NZ',tier:'',league:'Bundesliga',label:'Bundesliga relegation play-offs'},
+  {month:'May',year:2027,market:'AU & NZ',tier:'',league:'Copa Libertadores',label:'Copa Lib group stage'},
+  {month:'May',year:2027,market:'AU & NZ',tier:'',league:'Copa Sudamericana',label:'Copa Suda group stage'},
+  {month:'May',year:2027,market:'AU',tier:'Key Event',league:'ATP & WTA 1000',label:'ATP & WTA 1000 Rome'},
+
+  {month:'June',year:2027,market:'AU & NZ',tier:'Key Event',league:'Nations League',label:'UEFA Nations League SF'},
+  {month:'June',year:2027,market:'AU & NZ',tier:'Key Event',league:'Nations League',label:'UEFA Nations League Final'},
+  {month:'June',year:2027,market:'AU & NZ',tier:'Key Event',league:'Euro 2028 Qualifiers',label:'UEFA Euro 2028 Quals MD3 & 4'},
+  {month:'June',year:2027,market:'AU',tier:'Key Event',league:'ATP & WTA 500',label:'Grass court swing'},
+  {month:'June',year:2027,market:'NZ',tier:'Key Event',league:'Motorsport',label:'WEC Le Mans 24h'},
+];
+
+const MONTHS       = ['August','September','October','November','December','January','February','March','April','May','June'];
+const MONTH_LABELS = ['Aug 2026','Sep 2026','Oct 2026','Nov 2026','Dec 2026','Jan 2027','Feb 2027','Mar 2027','Apr 2027','May 2027','Jun 2027'];
+const MARKETS      = ['AU & NZ','AU','NZ'];
+const MARKET_LABELS= {'AU & NZ':'AU & NZ','AU':'AU only','NZ':'NZ only'};
+
+let currentView='months', currentMarket='all';
+
+function tierClass(t){ return t==='Key Event'?'key':t==='Big Event'?'big':t==='Notable'?'notable':'base'; }
+function tierOrder(t){ return t==='Key Event'?0:t==='Big Event'?1:t==='Notable'?2:3; }
+
+function makePill(e, tag){
+  const p = document.createElement('span');
+  p.className = 'pill '+tierClass(e.tier);
+  p.textContent = emoji(e.league)+' '+e.label;
+  if(tag){ const s=document.createElement('span'); s.className='market-tag'; s.textContent=tag; p.appendChild(s); }
+  return p;
+}
+
+function renderMonths(){
+  const grid=document.getElementById('mainGrid');
+  grid.className='grid grid-months'; grid.innerHTML='';
+  MONTHS.forEach((m,i)=>{
+    const evts=raw.filter(e=>e.month===m&&(currentMarket==='all'||e.market===currentMarket)).sort((a,b)=>tierOrder(a.tier)-tierOrder(b.tier));
+    const card=document.createElement('div'); card.className='card';
+    card.innerHTML=`<div class="card-label">${MONTH_LABELS[i]}</div>`;
+    const pills=document.createElement('div'); pills.className='pills';
+    if(!evts.length){ pills.innerHTML='<span class="empty">No events</span>'; }
+    else evts.forEach(e=>{ const tag=currentMarket==='all'?(e.market==='AU & NZ'?' ·AU&NZ':e.market==='AU'?' ·AU':' ·NZ'):null; pills.appendChild(makePill(e,tag)); });
+    card.appendChild(pills); grid.appendChild(card);
+  });
+}
+
+function renderMarkets(){
+  const grid=document.getElementById('mainGrid');
+  grid.className='grid grid-markets'; grid.innerHTML='';
+  MARKETS.forEach(m=>{
+    const evts=raw.filter(e=>e.market===m).sort((a,b)=>tierOrder(a.tier)-tierOrder(b.tier));
+    const card=document.createElement('div'); card.className='card';
+    card.innerHTML=`<div class="card-label">${MARKET_LABELS[m]}</div>`;
+    const pills=document.createElement('div'); pills.className='pills';
+    evts.forEach(e=>{ const idx=MONTHS.indexOf(e.month); const mo=idx>=0?MONTH_LABELS[idx].slice(0,3):e.month.slice(0,3); const clone={...e,label:mo+' · '+e.label}; pills.appendChild(makePill(clone,null)); });
+    card.appendChild(pills); grid.appendChild(card);
+  });
+}
+
+function setView(v){
+  currentView=v;
+  document.querySelectorAll('#viewSeg .seg-btn').forEach(b=>b.classList.toggle('active',b.textContent.toLowerCase().includes(v==='months'?'month':'market')));
+  document.getElementById('marketSeg').style.display=v==='months'?'flex':'none';
+  render();
+}
+function setMarket(m){
+  currentMarket=m;
+  const map={'all':'All','AU & NZ':'AU & NZ','AU':'AU only','NZ':'NZ only'};
+  document.querySelectorAll('#marketSeg .seg-btn').forEach(b=>b.classList.toggle('active',map[m]===b.textContent));
+  render();
+}
+function render(){ currentView==='months'?renderMonths():renderMarkets(); }
+render();
+</script>
