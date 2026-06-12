@@ -1,0 +1,1332 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AU &amp; NZ — Content Events Calendar</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      background: #0b0b0e;
+      color: #fff;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      padding: 24px;
+    }
+
+    .poster {
+      background: #0e0e12;
+      border-radius: 16px;
+      padding: 24px;
+      border: 1px solid #1c1c24;
+      max-width: 1600px;
+      margin: 0 auto;
+    }
+
+    .poster-title {
+      color: #fff;
+      font-size: 18px;
+      font-weight: 500;
+      letter-spacing: .02em;
+      margin-bottom: 2px;
+    }
+
+    .poster-sub {
+      color: #555;
+      font-size: 10px;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+
+    /* Controls & Filters Layout */
+    .controls-wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 20px;
+      background: #13131a;
+      padding: 16px;
+      border-radius: 12px;
+      border: 1px solid #1c1c24;
+    }
+
+    .controls-row {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .control-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #777;
+      min-width: 110px;
+    }
+
+    .seg {
+      display: flex;
+      background: #17171d;
+      border-radius: 8px;
+      padding: 3px;
+      gap: 2px;
+      flex-wrap: wrap;
+    }
+
+    .seg-btn {
+      border: none;
+      background: transparent;
+      color: #666;
+      font-size: 11px;
+      font-weight: 500;
+      padding: 5px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all .15s;
+      font-family: inherit;
+    }
+
+    .seg-btn.active {
+      background: #2a2a3a;
+      color: #fff;
+    }
+
+    /* Legend Indicator Styles */
+    .legend {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+      padding-left: 4px;
+    }
+
+    .leg {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: #888;
+    }
+
+    .leg-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* Viewports Render Frame Container */
+    .view-container {
+      overflow-x: auto;
+      padding-bottom: 8px;
+    }
+
+    /* --- VIEW: PILL TILES MATRIX --- */
+    .grid { display: grid; gap: 8px; }
+    .grid-months { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+    
+    .card { border-radius: 10px; padding: 12px; background: #17171d; border: 1px solid #22222f; }
+    .card-label { font-size: 11px; font-weight: 600; color: #fff; letter-spacing: .05em; text-transform: uppercase; margin-bottom: 10px; padding-bottom: 6px; border-bottom: .5px solid #242430; }
+    .pills { display: flex; flex-wrap: wrap; gap: 6px; }
+    
+    .pill { display: inline-flex; flex-direction: column; border-radius: 6px; padding: 4px 10px; font-size: 11px; font-weight: 500; line-height: 1.4; }
+    .pill.key     { background: #3C3489; color: #CECBF6; }
+    .pill.big     { background: #0F6E56; color: #9FE1CB; }
+    .pill.notable { background: #633806; color: #FAC775; }
+    .pill.base    { background: #22222f; color: #a0a0b0; }
+    .pill-league { font-size: 9px; font-weight: 700; opacity: 0.75; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 1px; }
+    .pill-main { display: flex; align-items: center; gap: 2px; }
+    .pill-sub { font-size: 9px; font-weight: 400; opacity: 0.7; margin-top: 1px; }
+    .market-tag { font-size: 9px; opacity: .55; margin-left: 4px; font-weight: bold; }
+    .empty-state { font-size: 11px; color: #555; padding: 4px 0; font-style: italic; }
+    .grid-item-details { font-size: 10px; color: #6a6a7a; margin-top: 4px; }
+    .grid-item-date { font-size: 10px; color: #555; margin-top: 2px; font-style: italic; }
+    .week-card { border-radius: 10px; padding: 12px; background: #17171d; border: 1px solid #22222f; }
+    .week-header { font-size: 11px; font-weight: 600; color: #fff; letter-spacing: .04em; text-transform: uppercase; margin-bottom: 8px; padding-bottom: 6px; border-bottom: .5px solid #242430; }
+    .week-days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; margin-bottom: 10px; }
+    .week-day { text-align: center; padding: 4px 2px; border-radius: 4px; }
+    .week-day-name { font-size: 8px; color: #444; text-transform: uppercase; letter-spacing: 0.05em; }
+    .week-day-num  { font-size: 11px; color: #666; margin-top: 1px; }
+    .week-day.has-events .week-day-name { color: #888; }
+    .week-day.has-events .week-day-num  { color: #bbb; }
+    .week-pills { display: flex; flex-wrap: wrap; gap: 5px; }
+    .grid-weeks { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px; }
+
+    /* ── One Pager ───────────────────────────────────────────── */
+    .op-wrap { background: #0d0d11; border-radius: 14px; padding: 28px; }
+    .op-head { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 20px; gap: 16px; flex-wrap: wrap; }
+    .op-head-left h1 { font-size: 22px; font-weight: 600; color: #fff; letter-spacing: .01em; margin-bottom: 4px; }
+    .op-head-left p  { font-size: 10px; color: #555; letter-spacing: .07em; text-transform: uppercase; }
+    .op-legend { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; padding-top: 4px; }
+    .op-leg    { display: flex; align-items: center; gap: 5px; font-size: 10px; color: #777; }
+    .op-leg-dot{ width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .op-grid   { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+    .op-month  { background: #15151c; border-radius: 10px; border: 1px solid #1e1e2a; padding: 10px 10px 8px; min-height: 60px; }
+    .op-month-hd { font-size: 9px; font-weight: 700; color: #fff; letter-spacing: .07em; text-transform: uppercase; margin-bottom: 7px; padding-bottom: 5px; border-bottom: .5px solid #252532; display: flex; justify-content: space-between; align-items: center; }
+    .op-month-count { font-size: 9px; color: #383848; font-weight: 400; letter-spacing: 0; }
+    .op-pills  { display: flex; flex-wrap: wrap; gap: 3px; }
+    .op-pill   { display: inline-flex; flex-direction: column; border-radius: 5px; padding: 3px 7px; font-size: 9.5px; font-weight: 500; line-height: 1.35; }
+    .op-pill.key     { background: #2e2877; color: #C4C0F2; }
+    .op-pill.big     { background: #0a5440; color: #8ED8BB; }
+    .op-pill.notable { background: #4d2b00; color: #F5BA70; }
+    .op-pill.base    { background: #1c1c28; color: #555; }
+    .op-pill-lg  { font-size: 8px; font-weight: 700; opacity: .65; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 1px; }
+    .op-pill-lbl { font-size: 9.5px; }
+    .op-pill-sub { font-size: 8px; opacity: .65; font-weight: 400; margin-top: 1px; }
+    .op-empty  { font-size: 10px; color: #2a2a38; font-style: italic; padding: 4px 0; }
+    .op-divider{ grid-column: 1 / -1; height: 1px; background: #1a1a24; margin: 2px 0; }
+    .op-footer { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 16px; padding-top: 12px; border-top: .5px solid #1a1a24; }
+    .op-stat   { font-size: 10px; color: #444; }
+    .op-stat strong { color: #888; font-weight: 500; }
+    @media print {
+      body { background: #fff; padding: 0; }
+      .poster { border: none; border-radius: 0; padding: 12px; }
+      .controls-wrapper, .legend { display: none !important; }
+    }
+
+    /* ── Gantt One Pager ──────────────────────────────────────── */
+    .op-gantt-wrap { background: #0d0d11; border-radius: 14px; padding: 24px; }
+    .op-gantt-topbar { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 16px; gap: 16px; flex-wrap: wrap; }
+    .op-gantt-title { font-size: 20px; font-weight: 600; color: #fff; margin-bottom: 3px; }
+    .op-gantt-sub   { font-size: 10px; color: #555; letter-spacing: .07em; text-transform: uppercase; }
+    .op-gantt-topright { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+    .op-gantt-legend { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; }
+    .op-gantt-leg    { display: flex; align-items: center; gap: 6px; font-size: 10px; color: #777; }
+    .op-dl-btn { background: #1e1e2e; color: #aaa; border: 1px solid #2a2a3a; border-radius: 7px; padding: 7px 14px; font-size: 11px; font-family: inherit; cursor: pointer; white-space: nowrap; transition: background .15s; }
+    .op-dl-btn:hover { background: #2a2a3e; color: #fff; }
+    .op-gantt-table-wrap { overflow-x: auto; }
+    .op-gantt-table { border-collapse: collapse; width: 100%; min-width: 700px; }
+    .op-th-sport  { width: 28px; }
+    .op-th-league { text-align: left; padding: 6px 12px 6px 0; font-size: 10px; color: #555; font-weight: 400; white-space: nowrap; min-width: 170px; }
+    .op-th-month  { text-align: center; padding: 6px 0 8px; font-size: 10px; color: #555; font-weight: 500; letter-spacing: .04em; width: calc((100% - 200px) / 11); min-width: 44px; border-bottom: 1px solid #1a1a28; }
+    .op-sport-label { vertical-align: middle; text-align: center; background: #111119; border-right: 1px solid #1a1a28; border-bottom: 1px solid #1a1a28; padding: 0; width: 28px; }
+    .op-sport-label span { writing-mode: vertical-rl; transform: rotate(180deg); font-size: 9px; font-weight: 600; color: #666; text-transform: uppercase; letter-spacing: .08em; display: block; padding: 8px 0; }
+    .op-league-name { font-size: 11px; color: #ccc; white-space: nowrap; padding: 4px 14px 4px 2px; border-bottom: 1px solid #141420; }
+    .op-cell { padding: 3px 2px; border-bottom: 1px solid #141420; height: 28px; }
+    .op-cell-inner { height: 18px; }
+    .op-cell-inner.high { background: #5B54C8; }
+    .op-cell-inner.low  { background: #2a2a42; }
+    .op-cell-inner.r-left   { border-radius: 5px 0 0 5px; margin-left: 3px; }
+    .op-cell-inner.r-right  { border-radius: 0 5px 5px 0; margin-right: 3px; }
+    .op-cell-inner.r-both   { border-radius: 5px; margin: 0 3px; }
+    .op-cell-inner.r-none   { border-radius: 0; margin: 0; }
+    .op-group-sep td { height: 6px; background: #0a0a0e; border: none; padding: 0; }
+    .op-row-alt { background: #0f0f17; }
+    .op-gantt-footer { display: flex; justify-content: space-between; margin-top: 14px; padding-top: 10px; border-top: .5px solid #1a1a28; font-size: 10px; color: #333; }
+
+    /* --- VIEW: ONE PAGER --- */
+    .op-wrap { display: flex; flex-direction: column; gap: 0; }
+    .op-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .op-title  { color: #fff; font-size: 16px; font-weight: 600; letter-spacing: .02em; }
+    .op-meta   { color: #555; font-size: 10px; letter-spacing: .06em; text-transform: uppercase; margin-top: 2px; }
+    .op-print-btn {
+      background: #2a2a3a; color: #ccc; border: 1px solid #3a3a4a;
+      border-radius: 7px; padding: 7px 14px; font-size: 11px; font-weight: 500;
+      font-family: inherit; cursor: pointer; letter-spacing: .03em; transition: background .15s;
+    }
+    .op-print-btn:hover { background: #36364a; color: #fff; }
+    .op-legend { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 16px; }
+    .op-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 1px;
+      background: #1c1c24;
+      border: 1px solid #1c1c24;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .op-month {
+      background: #0e0e12;
+      padding: 10px 12px 12px;
+      min-height: 80px;
+    }
+    .op-month-label {
+      font-size: 10px; font-weight: 700; color: #fff;
+      text-transform: uppercase; letter-spacing: .07em;
+      margin-bottom: 8px; padding-bottom: 5px;
+      border-bottom: 1px solid #1c1c24;
+    }
+    .op-events { display: flex; flex-direction: column; gap: 3px; }
+    .op-event  {
+      display: flex; align-items: flex-start; gap: 6px;
+      font-size: 10px; line-height: 1.35; padding: 3px 5px;
+      border-radius: 4px;
+    }
+    .op-event.key     { background: rgba(60,52,137,.35); color: #CECBF6; }
+    .op-event.big     { background: rgba(15,110,86,.35);  color: #9FE1CB; }
+    .op-event.notable { background: rgba(99,56,6,.35);    color: #FAC775; }
+    .op-event.base    { background: rgba(34,34,47,.6);    color: #777; }
+    .op-event-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+    .op-event-body { flex: 1; }
+    .op-event-league { font-size: 8.5px; font-weight: 700; opacity: .65; text-transform: uppercase; letter-spacing: .04em; }
+    .op-event-label  { font-size: 10px; font-weight: 500; }
+    .op-event-sub    { font-size: 8.5px; opacity: .6; margin-top: 1px; }
+    .op-empty { font-size: 10px; color: #333; font-style: italic; padding: 4px 0; }
+
+    @media print {
+      body { background: #fff !important; padding: 0 !important; }
+      .poster { border: none !important; padding: 12px !important; background: #fff !important; }
+      .controls-wrapper, .legend { display: none !important; }
+      .op-print-btn { display: none !important; }
+      .op-grid { border-color: #ddd !important; background: #ddd !important; }
+      .op-month { background: #fff !important; }
+      .op-month-label { color: #111 !important; border-color: #ddd !important; }
+      .op-event.key     { background: #ede9ff !important; color: #3C3489 !important; }
+      .op-event.big     { background: #e0f5ee !important; color: #0F6E56 !important; }
+      .op-event.notable { background: #fff3e0 !important; color: #633806 !important; }
+      .op-event.base    { background: #f4f4f6 !important; color: #555 !important; }
+      .op-event-dot     { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+      .op-title  { color: #111 !important; }
+      .op-meta   { color: #888 !important; }
+      .op-legend .leg { color: #444 !important; }
+    }
+
+    /* --- VIEW: COLUMN CALENDAR GRID VIEW (Screenshot Style) --- */
+    .calendar-grid {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .grid-column {
+      flex: 1;
+      min-width: 240px;
+      background: #13131a;
+      border-radius: 12px;
+      border: 1px solid #22222f;
+      overflow: hidden;
+    }
+
+    .column-header {
+      text-align: center;
+      padding: 12px;
+      font-size: 13px;
+      font-weight: 600;
+      border-bottom: 1px solid #22222f;
+      background: rgba(255, 255, 255, 0.02);
+      color: #fff;
+    }
+
+    .column-content {
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .tier-group {
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.03);
+      background: #17171d;
+    }
+
+    .tier-group-header {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 6px 10px;
+    }
+    
+    .tgh-key     { background: rgba(127, 119, 221, 0.15); color: #b4afee; }
+    .tgh-big     { background: rgba(29, 158, 117, 0.15); color: #87dec2; }
+    .tgh-notable { background: rgba(239, 159, 39, 0.15); color: #f7cb8b; }
+    .tgh-base    { background: rgba(255, 255, 255, 0.04); color: #a0a0b0; }
+
+    .grid-item {
+      padding: 10px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    }
+    .grid-item:last-child { border-bottom: none; }
+
+    .grid-item-league {
+      font-size: 10px;
+      font-weight: 700;
+      color: #8f8f9d;
+      margin-bottom: 3px;
+    }
+
+    .grid-item-label {
+      font-size: 12px;
+      font-weight: 500;
+      color: #fff;
+      line-height: 1.35;
+    }
+
+    .grid-item-market {
+      font-size: 9px;
+      color: #555;
+      margin-top: 5px;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+
+<div class="poster">
+  <div class="poster-title">AU &amp; NZ — content events calendar</div>
+  <div class="poster-sub">2026 / 27 season · Football · Tennis · Motorsport</div>
+
+  <div class="controls-wrapper">
+    <div class="controls-row">
+      <div class="control-label">Layout View:</div>
+      <div class="seg" id="viewSeg">
+        <button class="seg-btn active" onclick="setView('visual')">Visual Grid</button>
+        <button class="seg-btn" onclick="setView('months')">Pills Matrix</button>
+        <button class="seg-btn" onclick="setView('weekly')">Weekly View</button>
+        <button class="seg-btn" onclick="setView('onepager')">One Pager</button>
+        <button class="seg-btn" onclick="setView('onepager')">One Pager</button>
+      </div>
+    </div>
+
+    <div class="controls-row">
+      <div class="control-label">Territory:</div>
+      <div class="seg" id="marketSeg">
+        <button class="seg-btn active" onclick="setMarket('all')">All Markets</button>
+        <button class="seg-btn" onclick="setMarket('AU')">AU Only</button>
+        <button class="seg-btn" onclick="setMarket('NZ')">NZ Only</button>
+      </div>
+    </div>
+
+    <div class="controls-row">
+      <div class="control-label">Sport Types:</div>
+      <div class="seg" id="sportSeg">
+        </div>
+    </div>
+
+    <div class="controls-row" id="leagueFilterRow">
+      <div class="control-label">Leagues/Properties:</div>
+      <div class="seg" id="leagueSeg">
+        </div>
+    </div>
+
+    <div class="controls-row">
+      <div class="control-label">Active Months:</div>
+      <div class="seg" id="monthToggleSeg">
+        </div>
+    </div>
+
+    <div class="controls-row">
+      <div class="control-label">Event Tier:</div>
+      <div class="seg" id="tierSeg"></div>
+    </div>
+
+  </div>
+
+  <div class="legend">
+    <span class="leg"><span class="leg-dot" style="background:#7F77DD"></span>Key Event</span>
+    <span class="leg"><span class="leg-dot" style="background:#1D9E75"></span>Big Event</span>
+    <span class="leg"><span class="leg-dot" style="background:#EF9F27"></span>Notable</span>
+    <span class="leg"><span class="leg-dot" style="background:#333"></span>Scheduled</span>
+  </div>
+
+  <div class="view-container" id="viewContainer"></div>
+</div>
+
+<script>
+function getSportType(league) {
+  const l = league.toLowerCase();
+  if (l.includes('tennis') || l.includes('atp') || l.includes('wta') || l.includes('davis')) return 'tennis';
+  if (l.includes('motorsport') || l.includes('le mans') || l.includes('wec')) return 'others';
+  return 'football'; 
+}
+
+function emoji(league){
+  const l = league.toLowerCase();
+  const flagScotland = '\u{1F3F4}\u{E0067}\u{E0062}\u{E0073}\u{E0063}\u{E0074}\u{E007F}';
+  const flagEngland  = '\u{1F3F4}\u{E0067}\u{E0062}\u{E0065}\u{E006E}\u{E0067}\u{E007F}';
+
+  if (getSportType(league) === 'tennis') return '🎾';
+  if (getSportType(league) === 'others') return '🏎️';
+  if(l.includes('nations league') || l.includes('euro 2028') || l.includes('intercontinental')) return '🏆🌍';
+  if(l.includes('supercopa')) return '🏆🇪🇸';
+  if(l.includes('carabao')) return '🏆' + flagEngland;
+  if(l.includes('fa cup') || l.includes('efl playoff') || l.includes('efl play')) return '🏆' + flagEngland;
+  if(l.includes('copa libertadores') || l.includes('copa sudamericana')) return '🏆🌎';
+  if(l.includes('beckenbauer') || l.includes('franz')) return '🏆🇩🇪';
+  if(l.includes('bundesliga')) return '⚽🇩🇪';
+  if(l.includes('spfl') || l.includes('scottish')) return '⚽' + flagScotland;
+  if(l.includes('efl')) return '⚽' + flagEngland;
+  if(l.includes('laliga') || l.includes('la liga')) return '⚽🇪🇸';
+  if(l.includes('serie a')) return '⚽🇮🇹';
+  if(l.includes('ligue')) return '⚽🇫🇷';
+  return '⚽';
+}
+
+const raw = [
+  // ── AUGUST 2026 ──────────────────────────────────────────────
+  {month:'August',year:2026,market:'AUNZ',tier:'Key Event',league:'SPFL',label:'Season Start',details:'',date:'1 Aug'},
+  {month:'August',year:2026,market:'AUNZ',tier:'Key Event',league:'EFL',label:'Season Start',details:'',date:'15 Aug'},
+  {month:'August',year:2026,market:'AUNZ',tier:'Key Event',league:'LaLiga',label:'Season Start',details:'',date:'15 Aug'},
+  {month:'August',year:2026,market:'AUNZ',tier:'Key Event',league:'Bundesliga',label:'Season Start',details:'',date:'22 Aug'},
+  {month:'August',year:2026,market:'AUNZ',tier:'Key Event',league:'Serie A',label:'Season Start',details:'',date:'22 Aug'},
+  {month:'August',year:2026,market:'AUNZ',tier:'Notable',league:'Carabao Cup',label:'Round 1 & 2',details:'',date:''},
+  {month:'August',year:2026,market:'AUNZ',tier:'Notable',league:'Franz Beckenbauer Supercup (DFL)',label:'Bayern vs Dortmund',details:'',date:'22 Aug'},
+  {month:'August',year:2026,market:'AUNZ',tier:'',league:'Copa Libertadores',label:'Round of 16',details:'',date:''},
+  {month:'August',year:2026,market:'AUNZ',tier:'',league:'Copa Sudamericana',label:'Round of 16',details:'',date:''},
+  {month:'August',year:2026,market:'AU',tier:'Big Event',league:'ATP',label:'Montreal & Cincinnati',details:'1000 Event',date:''},
+  {month:'August',year:2026,market:'AU',tier:'Big Event',league:'WTA',label:'Toronto & Cincinnati',details:'1000 Event',date:''},
+
+  // ── SEPTEMBER 2026 ───────────────────────────────────────────
+  {month:'September',year:2026,market:'AUNZ',tier:'Key Event',league:'UEFA Nations League',label:'MD 1 & 2',details:'',date:''},
+  {month:'September',year:2026,market:'AUNZ',tier:'Key Event',league:'Carabao Cup',label:'Round 3',details:'',date:''},
+  {month:'September',year:2026,market:'AUNZ',tier:'',league:'Bundesliga',label:'Hamburger SV v Werder Bremen',details:'Nord Derby',date:''},
+  {month:'September',year:2026,market:'AUNZ',tier:'',league:'LaLiga',label:'Athletic Club v Real Sociedad',details:'Basque Derby',date:''},
+  {month:'September',year:2026,market:'AUNZ',tier:'Key Event',league:'Serie A',label:'Napoli v Roma',details:'',date:''},
+  {month:'September',year:2026,market:'AUNZ',tier:'Key Event',league:'Serie A',label:'Inter v Juventus',details:"Derby d'Italia",date:''},
+  {month:'September',year:2026,market:'AUNZ',tier:'Key Event',league:'Serie A',label:'Juventus v Milan',details:'',date:''},
+  {month:'September',year:2026,market:'AUNZ',tier:'Notable',league:'EFL',label:'Blackburn v Burnley',details:'East Lancashire Derby',date:''},
+  {month:'September',year:2026,market:'AUNZ',tier:'Notable',league:'EFL',label:'Wrexham v Swansea',details:'Welsh Derby',date:''},
+  {month:'September',year:2026,market:'AUNZ',tier:'Key Event',league:'SPFL',label:'Celtic v Rangers',details:'Old Firm',date:''},
+  {month:'September',year:2026,market:'AUNZ',tier:'Notable',league:'SPFL',label:'Hearts v Hibernian',details:'Edinburgh Derby',date:''},
+  {month:'September',year:2026,market:'AUNZ',tier:'Notable',league:'Copa Libertadores',label:'Quarter Finals',details:'',date:''},
+  {month:'September',year:2026,market:'AUNZ',tier:'Notable',league:'Copa Sudamericana',label:'Quarter Finals',details:'',date:''},
+  {month:'September',year:2026,market:'AU',tier:'Notable',league:'Davis Cup',label:'2nd Round Qualifiers',details:'',date:''},
+  {month:'September',year:2026,market:'AU',tier:'Notable',league:'Australian Tennis Pro Tour',label:'Local Tournaments & Swing',details:'',date:''},
+  {month:'September',year:2026,market:'NZ',tier:'',league:'FA Cup',label:'Early Preliminary Rounds',details:'',date:''},
+  {month:'September',year:2026,market:'AU',tier:'Notable',league:'WTA',label:'Guadalajara Open',details:'500 Event',date:'13–19 Sep'},
+  {month:'September',year:2026,market:'AU',tier:'Notable',league:'WTA',label:'Singapore Open',details:'500 Event',date:'21–27 Sep'},
+  {month:'September',year:2026,market:'AU',tier:'Notable',league:'WTA',label:'Korea Open',details:'500 Event',date:'21–27 Sep'},
+  {month:'September',year:2026,market:'AU',tier:'Big Event',league:'WTA',label:'China Open',details:'1000 Event',date:'30 Sep–11 Oct'},
+  {month:'September',year:2026,market:'AU',tier:'Notable',league:'ATP',label:'Japan Open',details:'500 Event',date:'30 Sep–6 Oct'},
+  {month:'September',year:2026,market:'AU',tier:'Notable',league:'ATP',label:'China Open',details:'500 Event',date:'30 Sep–6 Oct'},
+
+  // ── OCTOBER 2026 ─────────────────────────────────────────────
+  {month:'October',year:2026,market:'AUNZ',tier:'Key Event',league:'UEFA Nations League',label:'MD 3 & 4',details:'',date:'1–6 Oct'},
+  {month:'October',year:2026,market:'AUNZ',tier:'Key Event',league:'Carabao Cup',label:'Round 4',details:'',date:''},
+  {month:'October',year:2026,market:'AUNZ',tier:'Key Event',league:'Bundesliga',label:'Bayern v Dortmund',details:'Der Klassiker',date:''},
+  {month:'October',year:2026,market:'AUNZ',tier:'Key Event',league:'LaLiga',label:'Atletico v Real',details:'Madrid Derby',date:''},
+  {month:'October',year:2026,market:'AUNZ',tier:'Notable',league:'LaLiga',label:'Real Betis v Sevilla',details:'Seville Derby',date:''},
+  {month:'October',year:2026,market:'AUNZ',tier:'Notable',league:'Serie A',label:'Lazio v Roma',details:'Rome Derby',date:''},
+  {month:'October',year:2026,market:'AUNZ',tier:'Key Event',league:'EFL',label:'West Ham v Millwall',details:'Dockers Derby',date:''},
+  {month:'October',year:2026,market:'AUNZ',tier:'Notable',league:'EFL',label:'Cardiff v Swansea',details:'South Wales Derby',date:''},
+  {month:'October',year:2026,market:'AUNZ',tier:'Notable',league:'Copa Libertadores',label:'Semi Finals',details:'',date:''},
+  {month:'October',year:2026,market:'AUNZ',tier:'Notable',league:'Copa Sudamericana',label:'Semi Finals',details:'',date:''},
+  {month:'October',year:2026,market:'AU',tier:'Key Event',league:'ATP',label:'Shanghai Masters',details:'1000 Event',date:'5–18 Oct'},
+  {month:'October',year:2026,market:'AU',tier:'Big Event',league:'WTA',label:'Wuhan Open',details:'1000 Event',date:'12–18 Oct'},
+  {month:'October',year:2026,market:'AU',tier:'Notable',league:'Australian Tennis Pro Tour',label:'Local Tournaments & Swing',details:'',date:''},
+
+  // ── NOVEMBER 2026 ────────────────────────────────────────────
+  {month:'November',year:2026,market:'AUNZ',tier:'Key Event',league:'UEFA Nations League',label:'MD 5 & 6',details:'Group Stage Finale',date:''},
+  {month:'November',year:2026,market:'AUNZ',tier:'Key Event',league:'Carabao Cup',label:'Round 5',details:'',date:''},
+  {month:'November',year:2026,market:'AUNZ',tier:'Notable',league:'Bundesliga',label:'Dortmund v Schalke',details:'Revier Derby',date:''},
+  {month:'November',year:2026,market:'AUNZ',tier:'Key Event',league:'Serie A',label:'Inter v AC Milan',details:'Milan Derby',date:''},
+  {month:'November',year:2026,market:'AUNZ',tier:'Big Event',league:'EFL',label:'Portsmouth v Southampton',details:'South Coast Derby',date:''},
+  {month:'November',year:2026,market:'AUNZ',tier:'Big Event',league:'EFL',label:'West Brom v Wolves',details:'Black Country Derby',date:''},
+  {month:'November',year:2026,market:'AUNZ',tier:'Notable',league:'Copa Libertadores',label:'Final',details:'',date:'28 Nov'},
+  {month:'November',year:2026,market:'AUNZ',tier:'Notable',league:'Copa Sudamericana',label:'Final',details:'',date:''},
+  {month:'November',year:2026,market:'AU',tier:'Key Event',league:'ATP',label:'Paris Masters',details:'1000 Event',date:''},
+  {month:'November',year:2026,market:'AU',tier:'Key Event',league:'ATP',label:'ATP Finals',details:'Turin',date:''},
+  {month:'November',year:2026,market:'AU',tier:'Key Event',league:'WTA',label:'WTA Finals',details:'Riyadh',date:''},
+  {month:'November',year:2026,market:'AU',tier:'Notable',league:'Australian Tennis Pro Tour',label:'Local Summer Hardcourt Swing',details:'',date:''},
+  {month:'November',year:2026,market:'NZ',tier:'',league:'FA Cup',label:'Round 1',details:'',date:''},
+
+  // ── DECEMBER 2026 ────────────────────────────────────────────
+  {month:'December',year:2026,market:'AUNZ',tier:'Notable',league:'FIFA Intercontinental Cup',label:'Tournament',details:'',date:''},
+  {month:'December',year:2026,market:'AUNZ',tier:'Key Event',league:'Carabao Cup',label:'Quarter Finals',details:'',date:''},
+  {month:'December',year:2026,market:'AUNZ',tier:'Key Event',league:'LaLiga',label:'Barcelona v Real Madrid',details:'El Clásico',date:''},
+  {month:'December',year:2026,market:'AUNZ',tier:'',league:'LaLiga',label:'Levante v Valencia',details:'Valencia Derby',date:''},
+  {month:'December',year:2026,market:'AUNZ',tier:'Notable',league:'LaLiga',label:'Barcelona v Espanyol',details:'Catalan Derby',date:''},
+  {month:'December',year:2026,market:'AUNZ',tier:'Key Event',league:'Serie A',label:'Milan v Juventus',details:'',date:''},
+  {month:'December',year:2026,market:'AUNZ',tier:'Notable',league:'Bundesliga',label:'Dortmund v Gladbach',details:'Borussen Derby',date:''},
+  {month:'December',year:2026,market:'AUNZ',tier:'Notable',league:'Bundesliga',label:'Koln v Gladbach',details:'Rhine Derby',date:''},
+  {month:'December',year:2026,market:'AUNZ',tier:'Notable',league:'SPFL',label:'Hearts v Hibernian',details:'Edinburgh Derby',date:''},
+  {month:'December',year:2026,market:'AUNZ',tier:'Notable',league:'EFL',label:'Cardiff v Wrexham',details:'Welsh Derby',date:''},
+  {month:'December',year:2026,market:'AUNZ',tier:'Notable',league:'EFL',label:'Wrexham v Birmingham',details:'Hollywood Derby',date:''},
+  {month:'December',year:2026,market:'NZ',tier:'Notable',league:'FA Cup',label:'Round 2',details:'',date:''},
+
+  // ── JANUARY 2027 ─────────────────────────────────────────────
+  {month:'January',year:2027,market:'AUNZ',tier:'Key Event',league:'Carabao Cup',label:'Semi Final (1st Leg)',details:'',date:''},
+  {month:'January',year:2027,market:'AUNZ',tier:'Key Event',league:'SPFL',label:'Celtic v Rangers',details:'Old Firm',date:''},
+  {month:'January',year:2027,market:'AUNZ',tier:'',league:'Bundesliga',label:'League Return from Winter Break',details:'',date:''},
+  {month:'January',year:2027,market:'AUNZ',tier:'',league:'LaLiga',label:'League Return from Winter Break',details:'',date:''},
+  {month:'January',year:2027,market:'AUNZ',tier:'',league:'Serie A',label:'League Return from Winter Break',details:'',date:''},
+  {month:'January',year:2027,market:'AUNZ',tier:'Key Event',league:'Supercopa de España',label:'Semi Finals & Final',details:'',date:''},
+  {month:'January',year:2027,market:'AUNZ',tier:'Notable',league:'EFL',label:'Middlesbrough v Southampton',details:'',date:''},
+  {month:'January',year:2027,market:'NZ',tier:'Key Event',league:'FA Cup',label:'Round 3',details:'Premier League Clubs Enter',date:''},
+
+  // ── FEBRUARY 2027 ────────────────────────────────────────────
+  {month:'February',year:2027,market:'AUNZ',tier:'Key Event',league:'Carabao Cup',label:'Semi Final (2nd Leg)',details:'',date:''},
+  {month:'February',year:2027,market:'AUNZ',tier:'Key Event',league:'Serie A',label:'Inter v Juventus',details:"Derby d'Italia",date:''},
+  {month:'February',year:2027,market:'AUNZ',tier:'Big Event',league:'Bundesliga',label:'Bayern v Dortmund',details:'Der Klassiker',date:''},
+  {month:'February',year:2027,market:'AU',tier:'Notable',league:'Davis Cup',label:'Qualifiers Tie',details:'',date:''},
+  {month:'February',year:2027,market:'AU',tier:'Notable',league:'WTA',label:'Qatar Open',details:'1000 Event',date:''},
+  {month:'February',year:2027,market:'AU',tier:'Notable',league:'WTA',label:'Dubai Open',details:'1000 Event',date:''},
+  {month:'February',year:2027,market:'AU',tier:'Notable',league:'Australian Tennis Pro Tour',label:'Local Tournaments & Summer Swing',details:'',date:''},
+  {month:'February',year:2027,market:'NZ',tier:'Key Event',league:'FA Cup',label:'Round 4',details:'',date:''},
+
+  // ── MARCH 2027 ───────────────────────────────────────────────
+  {month:'March',year:2027,market:'AUNZ',tier:'Key Event',league:'UEFA Nations League',label:'Play-offs (1st Leg)',details:'',date:'25–27 Mar'},
+  {month:'March',year:2027,market:'AUNZ',tier:'Key Event',league:'UEFA Nations League',label:'Play-offs (2nd Leg)',details:'',date:'28–30 Mar'},
+  {month:'March',year:2027,market:'AUNZ',tier:'Key Event',league:'UEFA Euro 2028 Qualifiers',label:'Group Stage MD1',details:'',date:'26–27 Mar'},
+  {month:'March',year:2027,market:'AUNZ',tier:'Key Event',league:'UEFA Euro 2028 Qualifiers',label:'Group Stage MD2',details:'',date:'29–30 Mar'},
+  {month:'March',year:2027,market:'AUNZ',tier:'Key Event',league:'Carabao Cup',label:'Final',details:'',date:'30 Mar'},
+  {month:'March',year:2027,market:'AUNZ',tier:'Key Event',league:'SPFL',label:'Celtic v Rangers',details:'Old Firm',date:''},
+  {month:'March',year:2027,market:'AUNZ',tier:'Key Event',league:'Serie A',label:'Inter v AC Milan',details:'Milan Derby',date:''},
+  {month:'March',year:2027,market:'AUNZ',tier:'Key Event',league:'LaLiga',label:'Real v Atletico Madrid',details:'Madrid Derby',date:''},
+  {month:'March',year:2027,market:'AU',tier:'Key Event',league:'ATP',label:'Indian Wells',details:'1000 Event',date:''},
+  {month:'March',year:2027,market:'AU',tier:'Key Event',league:'ATP',label:'Miami Open',details:'1000 Event',date:''},
+  {month:'March',year:2027,market:'AU',tier:'Key Event',league:'WTA',label:'Indian Wells',details:'1000 Event',date:''},
+  {month:'March',year:2027,market:'AU',tier:'Key Event',league:'WTA',label:'Miami Open',details:'1000 Event',date:''},
+  {month:'March',year:2027,market:'AU',tier:'Notable',league:'Australian Tennis Pro Tour',label:'Local Hardcourt Tournaments',details:'',date:''},
+  {month:'March',year:2027,market:'NZ',tier:'Key Event',league:'FA Cup',label:'Round 5',details:'',date:''},
+
+  // ── APRIL 2027 ───────────────────────────────────────────────
+  {month:'April',year:2027,market:'AUNZ',tier:'Notable',league:'EFL',label:'Portsmouth v Southampton',details:'South Coast Derby',date:''},
+  {month:'April',year:2027,market:'AUNZ',tier:'Notable',league:'EFL League One',label:'Wrexham v Birmingham',details:'Hollywood Derby',date:''},
+  {month:'April',year:2027,market:'AUNZ',tier:'',league:'Bundesliga',label:'Dortmund v Gladbach',details:'Borussen Derby',date:''},
+  {month:'April',year:2027,market:'AUNZ',tier:'',league:'Copa Libertadores',label:'Group Stage Matches',details:'',date:''},
+  {month:'April',year:2027,market:'AUNZ',tier:'',league:'Copa Sudamericana',label:'Group Stage Matches',details:'',date:''},
+  {month:'April',year:2027,market:'AU',tier:'Key Event',league:'ATP',label:'Monte-Carlo Masters',details:'1000 Event',date:'3–11 Apr'},
+  {month:'April',year:2027,market:'AU',tier:'Key Event',league:'WTA',label:'Madrid Open',details:'1000 Event',date:'19 Apr–2 May'},
+  {month:'April',year:2027,market:'AU',tier:'Key Event',league:'ATP',label:'Madrid Open',details:'1000 Event',date:'19 Apr–2 May'},
+  {month:'April',year:2027,market:'NZ',tier:'Key Event',league:'FA Cup',label:'Quarter Finals',details:'',date:''},
+  {month:'April',year:2027,market:'NZ',tier:'Key Event',league:'FA Cup',label:'Semi Finals',details:'',date:''},
+
+  // ── MAY 2027 ─────────────────────────────────────────────────
+  {month:'May',year:2027,market:'AUNZ',tier:'Key Event',league:'LaLiga',label:'Barcelona v Real Madrid',details:'El Clásico',date:''},
+  {month:'May',year:2027,market:'AUNZ',tier:'Big Event',league:'Serie A',label:'Lazio v Roma',details:'Rome Derby',date:''},
+  {month:'May',year:2027,market:'AUNZ',tier:'Key Event',league:'SPFL',label:'Celtic v Rangers',details:'Old Firm',date:''},
+  {month:'May',year:2027,market:'AUNZ',tier:'Key Event',league:'EFL',label:'Play-Offs',details:'',date:''},
+  {month:'May',year:2027,market:'AUNZ',tier:'',league:'Bundesliga',label:'Relegation Play-offs',details:'',date:''},
+  {month:'May',year:2027,market:'AUNZ',tier:'',league:'Copa Libertadores',label:'Group Stage Matches',details:'',date:''},
+  {month:'May',year:2027,market:'AUNZ',tier:'',league:'Copa Sudamericana',label:'Group Stage Matches',details:'',date:''},
+  {month:'May',year:2027,market:'AUNZ',tier:'Notable',league:'LaLiga',label:'Last Matchday',details:'',date:''},
+  {month:'May',year:2027,market:'AUNZ',tier:'Notable',league:'Serie A',label:'Last Matchday',details:'',date:''},
+  {month:'May',year:2027,market:'AUNZ',tier:'Notable',league:'SPFL',label:'Last Matchday',details:'',date:''},
+  {month:'May',year:2027,market:'AUNZ',tier:'Notable',league:'EFL',label:'Last Matchday',details:'',date:''},
+  {month:'May',year:2027,market:'AUNZ',tier:'Notable',league:'Bundesliga',label:'Last Matchday',details:'',date:''},
+  {month:'May',year:2027,market:'AU',tier:'Key Event',league:'ATP',label:'Rome Open',details:'1000 Event',date:'5–16 May'},
+  {month:'May',year:2027,market:'AU',tier:'Key Event',league:'WTA',label:'Rome Open',details:'1000 Event',date:'5–16 May'},
+
+  // ── JUNE 2027 ────────────────────────────────────────────────
+  {month:'June',year:2027,market:'AUNZ',tier:'Key Event',league:'UEFA Nations League',label:'Semi Finals',details:'',date:'9–10 Jun'},
+  {month:'June',year:2027,market:'AUNZ',tier:'Key Event',league:'UEFA Nations League',label:'Third Place Play-Off',details:'',date:'13 Jun'},
+  {month:'June',year:2027,market:'AUNZ',tier:'Key Event',league:'UEFA Nations League',label:'Final',details:'',date:'13 Jun'},
+  {month:'June',year:2027,market:'AUNZ',tier:'Key Event',league:'UEFA Euro 2028 Qualifiers',label:'Group Stage MD3',details:'',date:'11–12 Jun'},
+  {month:'June',year:2027,market:'AUNZ',tier:'Key Event',league:'UEFA Euro 2028 Qualifiers',label:'Group Stage MD4',details:'',date:'14–15 Jun'},
+  {month:'June',year:2027,market:'AU',tier:'Key Event',league:'ATP',label:'Grass Court Swing',details:'500 Event',date:''},
+  {month:'June',year:2027,market:'AU',tier:'Key Event',league:'WTA',label:'Grass Court Swing',details:'500 Event',date:''},
+  {month:'June',year:2027,market:'NZ',tier:'Key Event',league:'WEC',label:'24 Hours of Le Mans',details:'',date:''},
+];
+
+const MONTHS        = ['August','September','October','November','December','January','February','March','April','May','June'];
+const MONTH_LABELS  = ['Aug 2026','Sep 2026','Oct 2026','Nov 2026','Dec 2026','Jan 2027','Feb 2027','Mar 2027','Apr 2027','May 2027','Jun 2027'];
+const MARKET_LABELS = {'AUNZ':'AU & NZ','AU':'AU only','NZ':'NZ only'};
+
+let currentView = 'visual';
+let currentMarket = 'all';
+
+// Multi-select state trackers arrays
+let selectedSports  = ['football', 'tennis', 'others']; // Defaults to all active
+let selectedLeagues = []; // Empty means "All Properties" (no restriction)
+let selectedTiers   = ['Key Event', 'Big Event', 'Notable', '']; // All tiers active by default
+let activeMonths = [...MONTHS]; 
+
+function tierClass(t){ return t==='Key Event'?'key':t==='Big Event'?'big':t==='Notable'?'notable':'base'; }
+function tierOrder(t){ return t==='Key Event'?0:t==='Big Event'?1:t==='Notable'?2:3; }
+function tierGroupColorClass(t) { return t==='Key Event'?'tgh-key':t==='Big Event'?'tgh-big':t==='Notable'?'tgh-notable':'tgh-base'; }
+
+function makePill(e, tag){
+  const p = document.createElement('span');
+  p.className = 'pill ' + tierClass(e.tier);
+
+  // Line 1: emoji + league name
+  const leagueLine = document.createElement('span');
+  leagueLine.className = 'pill-league';
+  leagueLine.textContent = emoji(e.league) + ' ' + e.league;
+  if(tag){ 
+    const s = document.createElement('span'); 
+    s.className = 'market-tag'; 
+    s.textContent = tag; 
+    leagueLine.appendChild(s); 
+  }
+  p.appendChild(leagueLine);
+
+  // Line 2: event label
+  const labelLine = document.createElement('span');
+  labelLine.className = 'pill-main';
+  labelLine.textContent = e.label;
+  p.appendChild(labelLine);
+
+  // Line 3: details · date
+  const subParts = [];
+  if(e.details) subParts.push(e.details);
+  if(e.date) subParts.push(e.date);
+  if(subParts.length){
+    const sub = document.createElement('span');
+    sub.className = 'pill-sub';
+    sub.textContent = subParts.join(' · ');
+    p.appendChild(sub);
+  }
+  return p;
+}
+
+// Master central matrix filtering mechanism
+function getFilteredEvents(m) {
+  return raw.filter(e => {
+    if (e.month !== m) return false;
+    
+    // Territory filter logic
+    if (currentMarket !== 'all') {
+      if (currentMarket === 'AUNZ' && e.market !== 'AUNZ') return false;
+      if (currentMarket === 'AU' && e.market !== 'AU' && e.market !== 'AUNZ') return false;
+      if (currentMarket === 'NZ' && e.market !== 'NZ' && e.market !== 'AUNZ') return false;
+    }
+    
+    // Multi-Select Sport checking logic
+    const sType = getSportType(e.league);
+    if (!selectedSports.includes(sType)) return false;
+    
+    // Multi-Select League checking logic
+    if (selectedLeagues.length > 0 && !selectedLeagues.includes(e.league)) return false;
+
+    // Tier filter
+    if (!selectedTiers.includes(e.tier)) return false;
+    
+    return true;
+  }).sort((a,b) => tierOrder(a.tier) - tierOrder(b.tier));
+}
+
+// Render dynamic months tracker row
+function setupMonthFilterUI() {
+  const container = document.getElementById('monthToggleSeg');
+  container.innerHTML = '';
+  MONTHS.forEach((m, idx) => {
+    const btn = document.createElement('button');
+    btn.className = 'seg-btn';
+    if (activeMonths.includes(m)) btn.classList.add('active');
+    btn.textContent = MONTH_LABELS[idx].split(' ')[0];
+    btn.onclick = () => {
+      if (activeMonths.includes(m)) {
+        if (activeMonths.length > 1) {
+          activeMonths = activeMonths.filter(x => x !== m);
+          btn.classList.remove('active');
+        }
+      } else {
+        activeMonths.push(m);
+        btn.classList.add('active');
+      }
+      render();
+    };
+    container.appendChild(btn);
+  });
+}
+
+// Render dynamic Sport selection buttons row
+function updateSportFilterUI() {
+  const container = document.getElementById('sportSeg');
+  container.innerHTML = '';
+
+  const sportsOptions = [
+    { id: 'all', label: 'All Sports' },
+    { id: 'football', label: 'Football' },
+    { id: 'tennis', label: 'Tennis' },
+    { id: 'others', label: 'Other Sports' }
+  ];
+
+  sportsOptions.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'seg-btn';
+    
+    if (opt.id === 'all') {
+      if (selectedSports.length === 3) btn.classList.add('active');
+    } else {
+      if (selectedSports.includes(opt.id) && selectedSports.length < 3) btn.classList.add('active');
+    }
+
+    btn.textContent = opt.label;
+    btn.onclick = () => {
+      if (opt.id === 'all') {
+        selectedSports = ['football', 'tennis', 'others'];
+      } else {
+        // If "all" was previously active, clean selection slate first
+        if (selectedSports.length === 3) {
+          selectedSports = [opt.id];
+        } else if (selectedSports.includes(opt.id)) {
+          if (selectedSports.length > 1) {
+            selectedSports = selectedSports.filter(s => s !== opt.id);
+          }
+        } else {
+          selectedSports.push(opt.id);
+        }
+      }
+      // Re-sync dependencies cascade downwards
+      updateSportFilterUI();
+      updateLeagueFilterUI();
+      render();
+    };
+    container.appendChild(btn);
+  });
+}
+
+// Updates league options container dynamically depending on selected sports
+function updateLeagueFilterUI() {
+  const container = document.getElementById('leagueSeg');
+  container.innerHTML = '';
+  
+  // Collect unique leagues visible under the current active sports array
+  const activeUniqueLeagues = [];
+  raw.forEach(e => {
+    const sType = getSportType(e.league);
+    if (selectedSports.includes(sType)) {
+      if (!activeUniqueLeagues.includes(e.league)) activeUniqueLeagues.push(e.league);
+    }
+  });
+  activeUniqueLeagues.sort();
+
+  // Clean obsolete selected leagues that might have dropped off due to sport filter changes
+  selectedLeagues = selectedLeagues.filter(l => activeUniqueLeagues.includes(l));
+
+  // "All Properties" button logic
+  const allBtn = document.createElement('button');
+  allBtn.className = 'seg-btn';
+  if (selectedLeagues.length === 0) allBtn.classList.add('active');
+  allBtn.textContent = 'All Properties';
+  allBtn.onclick = () => {
+    selectedLeagues = [];
+    document.querySelectorAll('#leagueSeg .seg-btn').forEach(b => b.classList.remove('active'));
+    allBtn.classList.add('active');
+    render();
+  };
+  container.appendChild(allBtn);
+
+  // Append context buttons per active unique asset lane row
+  activeUniqueLeagues.forEach(l => {
+    const btn = document.createElement('button');
+    btn.className = 'seg-btn';
+    if (selectedLeagues.includes(l)) btn.classList.add('active');
+    btn.textContent = l;
+    btn.onclick = () => {
+      if (selectedLeagues.includes(l)) {
+        selectedLeagues = selectedLeagues.filter(x => x !== l);
+        btn.classList.remove('active');
+        if (selectedLeagues.length === 0) allBtn.classList.add('active');
+      } else {
+        selectedLeagues.push(l);
+        btn.classList.add('active');
+        allBtn.classList.remove('active');
+      }
+      render();
+    };
+    container.appendChild(btn);
+  });
+}
+
+// --- RENDER 1: VISUAL GRID VIEW (Screenshot Style) ---
+function renderVisualGridView() {
+  const container = document.getElementById('viewContainer');
+  let html = `<div class="calendar-grid">`;
+  let matchesFound = false;
+
+  MONTHS.forEach((m, idx) => {
+    if (!activeMonths.includes(m)) return;
+
+    const evts = getFilteredEvents(m);
+    if(evts.length) matchesFound = true;
+
+    html += `
+      <div class="grid-column">
+        <div class="column-header">${MONTH_LABELS[idx]}</div>
+        <div class="column-content">
+    `;
+
+    if (!evts.length) {
+      html += `<div class="empty-state" style="text-align:center;padding:20px 0;">No Events</div>`;
+    } else {
+      const groups = {};
+      evts.forEach(e => {
+        const title = e.tier || 'Scheduled';
+        if (!groups[title]) groups[title] = [];
+        groups[title].push(e);
+      });
+
+      for (const [tierTitle, items] of Object.entries(groups)) {
+        html += `
+          <div class="tier-group">
+            <div class="tier-group-header ${tierGroupColorClass(items[0].tier)}">${tierTitle}</div>
+        `;
+        items.forEach(item => {
+          html += `
+            <div class="grid-item">
+              <div class="grid-item-league">${emoji(item.league)} ${item.league}</div>
+              <div class="grid-item-label">${item.label}</div>
+              ${item.details ? `<div class="grid-item-details">${item.details}</div>` : ''}
+              ${item.date ? `<div class="grid-item-date">📅 ${item.date}</div>` : ''}
+              <div class="grid-item-market">${MARKET_LABELS[item.market]}</div>
+            </div>
+          `;
+        });
+        html += `</div>`;
+      }
+    }
+    html += `</div></div>`;
+  });
+
+  html += `</div>`;
+  container.innerHTML = matchesFound ? html : `<div class="empty-state" style="padding: 40px; text-align: center;">No schedule events match your selected filtering configurations.</div>`;
+}
+
+// --- RENDER 2: PILLS MATRIX ---
+function renderMonthsView(){
+  const container = document.getElementById('viewContainer');
+  container.innerHTML = '<div class="grid grid-months" id="mainGrid"></div>';
+  const grid = document.getElementById('mainGrid');
+  let matchesFound = false;
+  
+  MONTHS.forEach((m, i) => {
+    if (!activeMonths.includes(m)) return;
+
+    const evts = getFilteredEvents(m);
+    if(evts.length) matchesFound = true;
+
+    const card = document.createElement('div'); 
+    card.className = 'card';
+    card.innerHTML = `<div class="card-label">${MONTH_LABELS[i]}</div>`;
+    
+    const pills = document.createElement('div'); 
+    pills.className = 'pills';
+    
+    if(!evts.length){ 
+      pills.innerHTML = '<span class="empty-state">No events</span>'; 
+    } else {
+      evts.forEach(e => { 
+        const tag = currentMarket === 'all' ? (e.market === 'AUNZ' ? ' ·AU&NZ' : e.market === 'AU' ? ' ·AU' : ' ·NZ') : null; 
+        pills.appendChild(makePill(e, tag)); 
+      });
+    }
+    card.appendChild(pills); 
+    grid.appendChild(card);
+  });
+
+  if(!matchesFound) {
+    container.innerHTML = `<div class="empty-state" style="padding: 40px; text-align: center;">No schedule events match your selected filtering configurations.</div>`;
+  }
+}
+
+
+// ── WEEKLY VIEW HELPERS ──────────────────────────────────────
+const MONTH_DATA = {
+  'August':    {y:2026, m:7},  'September': {y:2026, m:8},
+  'October':   {y:2026, m:9},  'November':  {y:2026, m:10},
+  'December':  {y:2026, m:11}, 'January':   {y:2027, m:0},
+  'February':  {y:2027, m:1},  'March':     {y:2027, m:2},
+  'April':     {y:2027, m:3},  'May':       {y:2027, m:4},
+  'June':      {y:2027, m:5},
+};
+
+function getEventStartDate(e) {
+  const md = MONTH_DATA[e.month];
+  if (!e.date || !e.date.trim()) return new Date(md.y, md.m, 1);
+  const first = e.date.trim().match(/^(\d+)/);
+  if (first) return new Date(md.y, md.m, parseInt(first[1]));
+  return new Date(md.y, md.m, 1);
+}
+
+function getSeasonWeeks() {
+  const weeks = [];
+  // Start Mon 27 Jul 2026 so Aug 1 (Sat) falls in W1
+  const cur = new Date(2026, 6, 27);
+  const end = new Date(2027, 5, 22); // through Jun 22 covers all Jun events
+  while (cur <= end) {
+    const ws = new Date(cur);
+    const we = new Date(cur); we.setDate(we.getDate() + 6);
+    weeks.push({start: ws, end: we});
+    cur.setDate(cur.getDate() + 7);
+  }
+  return weeks;
+}
+
+const SHORT_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const DAY_NAMES    = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
+function formatWeekLabel(ws, we) {
+  const sStr = `${ws.getDate()} ${SHORT_MONTHS[ws.getMonth()]}`;
+  const eStr = `${we.getDate()} ${SHORT_MONTHS[we.getMonth()]} ${we.getFullYear()}`;
+  return `${sStr} — ${eStr}`;
+}
+
+function renderWeeklyView() {
+  const container = document.getElementById('viewContainer');
+  const weeks = getSeasonWeeks();
+
+  // Pre-compute each event's start date and apply current filters
+  const allFiltered = raw.filter(e => {
+    if (currentMarket !== 'all') {
+      if (currentMarket === 'AUNZ' && e.market !== 'AUNZ') return false;
+      if (currentMarket === 'AU'   && e.market !== 'AU' && e.market !== 'AUNZ') return false;
+      if (currentMarket === 'NZ'   && e.market !== 'NZ' && e.market !== 'AUNZ') return false;
+    }
+    const sType = getSportType(e.league);
+    if (!selectedSports.includes(sType)) return false;
+    if (selectedLeagues.length > 0 && !selectedLeagues.includes(e.league)) return false;
+    if (!selectedTiers.includes(e.tier)) return false;
+    return true;
+  }).map(e => ({...e, _date: getEventStartDate(e)}));
+
+  // Use the same activeMonths toggle as the other views
+  const filtered = allFiltered.filter(e => activeMonths.includes(e.month));
+
+  let html = '<div class="grid-weeks">';
+  let anyShown = false;
+
+  weeks.forEach(week => {
+    const wEvts = filtered.filter(e => e._date >= week.start && e._date <= week.end)
+                          .sort((a,b) => tierOrder(a.tier) - tierOrder(b.tier));
+    if (!wEvts.length) return;
+    anyShown = true;
+
+    // Build day headers: which days have events
+    const dayHasEvents = Array(7).fill(false);
+    wEvts.forEach(e => {
+      const dayOffset = Math.round((e._date - week.start) / 86400000);
+      if (dayOffset >= 0 && dayOffset < 7) dayHasEvents[dayOffset] = true;
+    });
+
+    html += `<div class="week-card">`;
+    html += `<div class="week-header">📅 ${formatWeekLabel(week.start, week.end)}</div>`;
+
+    // Day strip Mon–Sun
+    html += `<div class="week-days">`;
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(week.start); d.setDate(d.getDate() + i);
+      const cls = dayHasEvents[i] ? 'week-day has-events' : 'week-day';
+      html += `<div class="${cls}">
+        <div class="week-day-name">${DAY_NAMES[i]}</div>
+        <div class="week-day-num">${d.getDate()} ${SHORT_MONTHS[d.getMonth()]}</div>
+      </div>`;
+    }
+    html += `</div>`;
+
+    // Pills
+    html += `<div class="week-pills">`;
+    wEvts.forEach(e => {
+      const tc  = tierClass(e.tier);
+      const em  = emoji(e.league);
+      const mkt = currentMarket === 'all'
+        ? `<span class="market-tag">${e.market==='AUNZ'?' ·AU&NZ':e.market==='AU'?' ·AU':' ·NZ'}</span>`
+        : '';
+      const sub = [e.details, e.date].filter(Boolean).join(' · ');
+      html += `<span class="pill ${tc}">
+        <span class="pill-league">${em} ${e.league}</span>
+        <span class="pill-main">${e.label}${mkt}</span>
+        ${sub ? `<span class="pill-sub">${sub}</span>` : ''}
+      </span>`;
+    });
+    html += `</div></div>`;
+  });
+
+  html += '</div>';
+  container.innerHTML = anyShown
+    ? html
+    : '<div class="empty-state" style="padding:40px;text-align:center;">No events match your filters.</div>';
+}
+
+function setView(v){
+  currentView = v;
+  document.querySelectorAll('#viewSeg .seg-btn').forEach(b => {
+    b.classList.toggle('active',
+      (v === 'visual'   && b.textContent.includes('Visual'))   ||
+      (v === 'months'   && b.textContent.includes('Pills'))    ||
+      (v === 'weekly'   && b.textContent.includes('Weekly'))   ||
+      (v === 'onepager' && b.textContent.includes('One Pager'))
+    );
+  });
+  render();
+}
+
+function setMarket(m){
+  currentMarket = m;
+  const map = { 'all': 'All Markets', 'AUNZ': 'AU & NZ', 'AU': 'AU Only', 'NZ': 'NZ Only' };
+  document.querySelectorAll('#marketSeg .seg-btn').forEach(b => b.classList.toggle('active', map[m] === b.textContent));
+  render();
+}
+
+// ── ONE PAGER GANTT VIEW ─────────────────────────────────────────────────
+const GANTT_GROUPS = [
+  { sport:'Football', leagues:['UEFA Nations League','UEFA Euro 2028 Qualifiers','SPFL','EFL','EFL League One','LaLiga','Bundesliga','Serie A','Carabao Cup','FA Cup','Supercopa de España','Franz Beckenbauer Supercup (DFL)','FIFA Intercontinental Cup','Copa Libertadores','Copa Sudamericana'] },
+  { sport:'Tennis',   leagues:['ATP','WTA','Davis Cup','Australian Tennis Pro Tour'] },
+  { sport:'Other',    leagues:['WEC'] },
+];
+
+function ganttCellStatus(league, month) {
+  const evts = raw.filter(e => {
+    if (e.league !== league || e.month !== month) return false;
+    if (!activeMonths.includes(e.month)) return false;
+    if (currentMarket !== 'all') {
+      if (currentMarket === 'AU' && e.market !== 'AU' && e.market !== 'AUNZ') return false;
+      if (currentMarket === 'NZ' && e.market !== 'NZ' && e.market !== 'AUNZ') return false;
+    }
+    if (!selectedTiers.includes(e.tier)) return false;
+    return true;
+  });
+  if (!evts.length) return 'empty';
+  if (evts.some(e => e.tier === 'Key Event' || e.tier === 'Big Event')) return 'high';
+  return 'low';
+}
+
+function renderOnePager() {
+  const container = document.getElementById('viewContainer');
+  const leagueSet = new Set(raw.map(e => e.league));
+  const monthShort = ['Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar','Apr','May','Jun'];
+
+  let rows = '';
+  let totalLeagues = 0;
+
+  GANTT_GROUPS.forEach(group => {
+    const leagues = group.leagues.filter(l => leagueSet.has(l));
+    if (!leagues.length) return;
+    totalLeagues += leagues.length;
+
+    leagues.forEach((league, li) => {
+      // Compute statuses for all months
+      const statuses = MONTHS.map(m => ganttCellStatus(league, m));
+
+      // Build cells with rounded bar ends
+      const cells = statuses.map((s, i) => {
+        if (s === 'empty') return `<td class="op-cell"><div class="op-cell-inner"></div></td>`;
+        const prev = i > 0 ? statuses[i-1] : 'empty';
+        const next = i < statuses.length-1 ? statuses[i+1] : 'empty';
+        const isStart = (prev === 'empty');
+        const isEnd   = (next === 'empty');
+        const rClass  = isStart && isEnd ? 'r-both' : isStart ? 'r-left' : isEnd ? 'r-right' : 'r-none';
+        return `<td class="op-cell"><div class="op-cell-inner ${s} ${rClass}"></div></td>`;
+      }).join('');
+
+      const altClass = li % 2 === 1 ? ' op-row-alt' : '';
+      const sportCell = li === 0
+        ? `<td class="op-sport-label" rowspan="${leagues.length}"><span>${group.sport}</span></td>`
+        : '';
+
+      rows += `<tr class="${altClass}">${sportCell}<td class="op-league-name">${league}</td>${cells}</tr>`;
+    });
+
+    rows += `<tr class="op-group-sep"><td colspan="${MONTHS.length + 2}"></td></tr>`;
+  });
+
+  const mktLabel = { all:'All Markets', AU:'AU Only', NZ:'NZ Only', AUNZ:'AU & NZ' }[currentMarket] || 'All Markets';
+
+  container.innerHTML = `
+  <div class="op-gantt-wrap" id="ganttChart">
+    <div class="op-gantt-topbar">
+      <div>
+        <div class="op-gantt-title">AU &amp; NZ — Content Events Calendar</div>
+        <div class="op-gantt-sub">2026 / 27 Season &nbsp;·&nbsp; ${mktLabel}</div>
+      </div>
+      <div class="op-gantt-topright">
+        <button class="op-dl-btn" onclick="downloadGantt(this)">⬇ PNG</button>
+        <button class="op-dl-btn" onclick="downloadPptx(this)">⬇ PowerPoint</button>
+        <div class="op-gantt-legend">
+          <span class="op-gantt-leg">
+            <span style="background:#5B54C8;width:22px;height:10px;display:inline-block;border-radius:3px;vertical-align:middle;margin-right:5px;"></span>Key / Big Event
+          </span>
+          <span class="op-gantt-leg">
+            <span style="background:#2a2a42;width:22px;height:10px;display:inline-block;border-radius:3px;vertical-align:middle;margin-right:5px;"></span>Notable / Scheduled
+          </span>
+        </div>
+      </div>
+    </div>
+    <div class="op-gantt-table-wrap">
+      <table class="op-gantt-table">
+        <thead>
+          <tr>
+            <th class="op-th-sport"></th>
+            <th class="op-th-league"></th>
+            ${monthShort.map(m => `<th class="op-th-month">${m}</th>`).join('')}
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+    <div class="op-gantt-footer">
+      <span>${totalLeagues} properties &nbsp;·&nbsp; Aug 2026 – Jun 2027</span>
+      <span>AU &amp; NZ Content Calendar · 2026/27</span>
+    </div>
+  </div>`;
+}
+
+async function downloadGantt(btn) {
+  const el = document.getElementById('ganttChart');
+  if (!el) return;
+  const orig = btn.textContent;
+  btn.textContent = '⏳ Generating…';
+  btn.disabled = true;
+  try {
+    if (typeof html2canvas === 'undefined') {
+      window.print(); return;
+    }
+    const canvas = await html2canvas(el, { backgroundColor:'#0d0d11', scale:2, logging:false, useCORS:true });
+    const a = document.createElement('a');
+    a.download = 'content-calendar-2026-27.png';
+    a.href = canvas.toDataURL('image/png');
+    a.click();
+  } catch(e) { window.print(); }
+  btn.textContent = orig;
+  btn.disabled = false;
+}
+
+
+// ── PPTX EXPORT ───────────────────────────────────────────────────────────
+function findRuns(statuses) {
+  const runs = [];
+  let i = 0;
+  while (i < statuses.length) {
+    if (statuses[i] !== 'empty') {
+      const start = i, type = statuses[i];
+      while (i < statuses.length && statuses[i] === type) i++;
+      runs.push({ start, end: i - 1, type });
+    } else { i++; }
+  }
+  return runs;
+}
+
+async function downloadPptx(btn) {
+  if (typeof PptxGenJS === 'undefined') {
+    alert('PowerPoint library not loaded — please check your internet connection.');
+    return;
+  }
+  const orig = btn.textContent;
+  btn.textContent = '⏳ Building…'; btn.disabled = true;
+  try {
+    const pptx = new PptxGenJS();
+    pptx.layout = 'LAYOUT_WIDE';
+    const slide = pptx.addSlide();
+    slide.background = { color: '0d0d11' };
+
+    const GX = 0.30, SPORT_W = 0.24, LEAGUE_W = 1.90, N_MONTHS = 11;
+    const TOTAL_W = 13.33 - GX - 0.20;
+    const MONTH_W = (TOTAL_W - SPORT_W - LEAGUE_W) / N_MONTHS;
+    const ROW_H = 0.215, HDR_Y = 0.85, HDR_H = 0.22;
+    const BAR_PAD = 0.025, BAR_H = ROW_H - BAR_PAD * 2, RADIUS = 0.10;
+    const leagueSet = new Set(raw.map(e => e.league));
+    const mktLabel = { all:'All Markets', AU:'AU Only', NZ:'NZ Only', AUNZ:'AU & NZ' }[currentMarket] || 'All Markets';
+
+    slide.addText('AU & NZ — Content Events Calendar', { x:GX, y:0.10, w:10, h:0.45, fontSize:18, bold:true, color:'ffffff', fontFace:'Calibri' });
+    slide.addText('2026 / 27 Season  ·  ' + mktLabel, { x:GX, y:0.55, w:7, h:0.22, fontSize:9, color:'555555', fontFace:'Calibri' });
+
+    const LX = 9.6, LY = 0.50;
+    slide.addShape(pptx.ShapeType.roundRect, { x:LX,      y:LY, w:0.32, h:0.13, fill:{color:'5B54C8'}, line:{color:'5B54C8'}, rectRadius:RADIUS });
+    slide.addText('Key / Big Event',          { x:LX+0.38, y:LY-0.01, w:1.4, h:0.15, fontSize:8, color:'888888', fontFace:'Calibri' });
+    slide.addShape(pptx.ShapeType.roundRect, { x:LX+1.85, y:LY, w:0.32, h:0.13, fill:{color:'2a2a42'}, line:{color:'2a2a42'}, rectRadius:RADIUS });
+    slide.addText('Notable / Scheduled',      { x:LX+2.23, y:LY-0.01, w:1.4, h:0.15, fontSize:8, color:'888888', fontFace:'Calibri' });
+
+    const MON_LABELS = ['Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar','Apr','May','Jun'];
+    const MON_YEARS  = ['2026','2026','2026','2026','2026','2027','2027','2027','2027','2027','2027'];
+    MON_LABELS.forEach((m, i) => {
+      const mx = GX + SPORT_W + LEAGUE_W + i * MONTH_W;
+      slide.addText(m,            { x:mx, y:HDR_Y,          w:MONTH_W, h:HDR_H*0.58, fontSize:8, color:'777777', fontFace:'Calibri', align:'center', bold:true  });
+      slide.addText(MON_YEARS[i], { x:mx, y:HDR_Y+HDR_H*0.57, w:MONTH_W, h:HDR_H*0.43, fontSize:7, color:'444444', fontFace:'Calibri', align:'center' });
+    });
+    slide.addShape(pptx.ShapeType.rect, { x:GX+SPORT_W, y:HDR_Y+HDR_H-0.008, w:LEAGUE_W+N_MONTHS*MONTH_W, h:0.008, fill:{color:'1a1a28'}, line:{color:'1a1a28'} });
+
+    let rowY = HDR_Y + HDR_H;
+    GANTT_GROUPS.forEach(group => {
+      const leagues = group.leagues.filter(l => leagueSet.has(l));
+      if (!leagues.length) return;
+      const groupStartY = rowY, groupH = leagues.length * ROW_H;
+
+      slide.addShape(pptx.ShapeType.rect, { x:GX, y:groupStartY, w:SPORT_W, h:groupH, fill:{color:'111119'}, line:{color:'1e1e28', width:0.5} });
+      slide.addText(group.sport.toUpperCase(), { x:GX, y:groupStartY, w:SPORT_W, h:groupH, fontSize:7, color:'555555', fontFace:'Calibri', align:'center', valign:'middle', rotate:270 });
+
+      leagues.forEach((league, li) => {
+        const y = rowY;
+        if (li % 2 === 1) {
+          slide.addShape(pptx.ShapeType.rect, { x:GX+SPORT_W, y, w:LEAGUE_W+N_MONTHS*MONTH_W, h:ROW_H, fill:{color:'0f0f17'}, line:{color:'0f0f17'} });
+        }
+        slide.addText(league, { x:GX+SPORT_W+0.06, y:y+0.02, w:LEAGUE_W-0.1, h:ROW_H-0.04, fontSize:8, color:'cccccc', fontFace:'Calibri', align:'left', valign:'middle' });
+        const statuses = MONTHS.map(m => ganttCellStatus(league, m));
+        findRuns(statuses).forEach(run => {
+          const rx = GX + SPORT_W + LEAGUE_W + run.start * MONTH_W;
+          const rw = (run.end - run.start + 1) * MONTH_W;
+          const color = run.type === 'high' ? '5B54C8' : '2a2a42';
+          slide.addShape(pptx.ShapeType.roundRect, { x:rx+0.03, y:y+BAR_PAD, w:rw-0.06, h:BAR_H, fill:{color}, line:{color}, rectRadius:RADIUS });
+        });
+        slide.addShape(pptx.ShapeType.rect, { x:GX+SPORT_W, y:y+ROW_H-0.005, w:LEAGUE_W+N_MONTHS*MONTH_W, h:0.005, fill:{color:'141420'}, line:{color:'141420'} });
+        rowY += ROW_H;
+      });
+      rowY += 0.07;
+    });
+
+    slide.addText('AU & NZ Content Calendar · 2026/27', { x:GX, y:7.28, w:13, h:0.18, fontSize:7, color:'2a2a38', fontFace:'Calibri', align:'right' });
+    await pptx.writeFile({ fileName: 'content-calendar-2026-27.pptx' });
+  } catch(e) {
+    console.error(e);
+    alert('Error generating PowerPoint: ' + e.message);
+  }
+  btn.textContent = orig; btn.disabled = false;
+}
+
+function render(){ 
+  if (currentView === 'visual') {
+    renderVisualGridView();
+  } else if (currentView === 'weekly') {
+    renderWeeklyView();
+  } else if (currentView === 'onepager') {
+    renderOnePager();
+  } else {
+    renderMonthsView();
+  }
+}
+
+// Tier filter UI
+function setupTierFilterUI() {
+  const container = document.getElementById('tierSeg');
+  container.innerHTML = '';
+
+  const tiers = [
+    { id: 'Key Event', label: 'Key Event',  color: '#7F77DD' },
+    { id: 'Big Event', label: 'Big Event',  color: '#1D9E75' },
+    { id: 'Notable',   label: 'Notable',    color: '#EF9F27' },
+    { id: '',          label: 'Scheduled',  color: '#555'    },
+  ];
+
+  // "All" shortcut button
+  const allBtn = document.createElement('button');
+  allBtn.className = 'seg-btn';
+  allBtn.id = 'tierAllBtn';
+  if (selectedTiers.length === 4) allBtn.classList.add('active');
+  allBtn.textContent = 'All';
+  allBtn.onclick = () => {
+    selectedTiers = ['Key Event', 'Big Event', 'Notable', ''];
+    setupTierFilterUI();
+    render();
+  };
+  container.appendChild(allBtn);
+
+  tiers.forEach(t => {
+    const btn = document.createElement('button');
+    btn.className = 'seg-btn';
+    // Show a coloured dot inline with the label
+    btn.innerHTML = `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${t.color};margin-right:5px;vertical-align:middle;"></span>${t.label}`;
+    if (selectedTiers.includes(t.id)) btn.classList.add('active');
+
+    btn.onclick = () => {
+      if (selectedTiers.includes(t.id)) {
+        if (selectedTiers.length > 1) selectedTiers = selectedTiers.filter(x => x !== t.id);
+      } else {
+        selectedTiers.push(t.id);
+      }
+      // Sync "All" button state
+      document.getElementById('tierAllBtn').classList.toggle('active', selectedTiers.length === 4);
+      btn.classList.toggle('active', selectedTiers.includes(t.id));
+      render();
+    };
+    container.appendChild(btn);
+  });
+}
+
+// Operational Initiation loop setup
+setupMonthFilterUI();
+updateSportFilterUI();
+updateLeagueFilterUI();
+setupTierFilterUI();
+render();
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
+</body>
+</html>
